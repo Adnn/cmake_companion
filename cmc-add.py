@@ -54,7 +54,6 @@ class CMakeFile:
     def save_file(self):
         output_file = ''.join(str(i) for group in self.groups for i in group)
         output_file = output_file + self.outro
-        print output_file
 
         with open(self.filename, "w") as cmfile:
             cmfile.write(output_file)
