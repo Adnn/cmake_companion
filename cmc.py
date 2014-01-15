@@ -51,6 +51,10 @@ class CMakeFile:
         
         [os.remove(filename) for filename_list in removed_files for filename in filename_list]
 
+    def move_name(self, source_name, dest_name):
+        moved_files = [group[2].move_name(source_name, dest_name) for group in self.groups]
+        [os.rename(file_pair[0], file_pair[1]) for file_pair in moved_files if file_pair]
+
     def save_file(self):
         output_file = ''.join(str(i) for group in self.groups for i in group)
         output_file = output_file + self.outro
@@ -65,20 +69,40 @@ class FileList:
         self.metaref = CMakeFile.metadata[self.category]
         self.file_list = string_list.split()
 
+    def sort_filelist(self):
+        self.file_list = sorted(self.file_list)
+
+    def complete_filename(self, basename):
+        return basename + self.metaref["ext"]
+    
+    def generate_filelist(self, name_list):
+        return [self.complete_filename(basename) for basename in name_list]
+        
     def insert_names(self, name_list):
-        new_names = [basename + self.metaref["ext"]
-                     for basename in name_list]
+        new_names = self.generate_filelist(name_list)
         self.file_list.extend(new_names)
         self.file_list = sorted(self.file_list)
+        self.sort_filelist()
         return new_names
 
     def remove_names(self, name_list) :
         removed_names = [name 
-                         for name in [basename + self.metaref["ext"] for basename in name_list]
+                         for name in self.generate_filelist(name_list)
                          if name in self.file_list]
         [self.file_list.remove(name) for name in removed_names]
         return removed_names
         
+    def move_name(self, source_name, dest_name) :
+        source_file = self.complete_filename(source_name)
+        dest_file = self.complete_filename(dest_name)
+        if self.file_list.count(source_file):
+            self.file_list.remove(source_file)
+            self.file_list.append(dest_file)
+            self.sort_filelist()
+            return (source_file, dest_file)
+        else:
+            return None
+    
     def __str__(self):
         #prepend an empty element, to get the separator before the first elem in file_list
         return "\n    ".join(['']+self.file_list)
@@ -87,16 +111,23 @@ class FileList:
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description = 'Add classes to a project.')
-    parser.add_argument ("classname", nargs="+", help="The name of the class that will be added to the current project")
-    parser.add_argument ("--headers", action="store_true", help="Create header files only for listed names.")
-    parser.add_argument ("--remove", action="store_true", help="Remove the entries from the CMake file, and delete the corresponding files from the directory.")
+    parser.add_argument ("command", choices=['add', 'mv', 'remove'],
+                         help="The action that will be taken on the provided classname(s)")
+    parser.add_argument ("classname", nargs="+", help="The name of the class(es) to apply the command onto, in the current project directory.")
+    parser.add_argument ("--headers", action="store_true", help="Create header files only.")
 
     args = parser.parse_args()
 
     cm_file = CMakeFile("CMakeLists.txt")
 
-    if args.remove :
+    if args.command == 'mv' :
+        if len(args.classname) != 2:
+            sys.exit(1)
+        cm_file.move_name(*args.classname)
+
+    elif args.command == 'remove' :
         cm_file.remove_names(args.classname)
+
     else :
         if args.headers :
             filter = ["headers"]
@@ -106,35 +137,3 @@ if __name__ == '__main__':
         cm_file.insert_names(args.classname, filter)
 
     cm_file.save_file()
-
-    
-'''
-    with open("CMakeLists.txt", "r") as cmfile:
-            text_file = cmfile.read()
-            
-
-            for entry in filtered_data :
-                match = re.search(entry[0], text_file, re.DOTALL)
-                found_dict[match.end()] = entry + (match,)
-
-            
-            previous_marker = 0
-
-            for key in sorted(found_dict.keys()):
-                match = found_dict[key][2]
-
-                updated_list = match.group("files")
-                new_filenames = [basename + found_dict[key][1] for basename in args.classname]
-                [open(filename, "a") for filename in new_filenames]
-                updated_list.extend(new_filenames)
-
-                output_file += text_file[previous_marker:match.start()]
-#We add an empty element at the begining of the list, because we need the joining string before the first non-empty element.
-                output_file += match.group("declaration") + "\n    ".join(sorted(['']+updated_list)) + "\n)"
-                previous_marker = match.end()
-
-            output_file += text_file[previous_marker:]
-    
-    with open("CMakeLists.txt", "w") as cmfile:
-        cmfile.write(output_file)
-'''
