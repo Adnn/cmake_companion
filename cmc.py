@@ -114,7 +114,8 @@ if __name__ == '__main__':
     parser.add_argument ("command", choices=['add', 'mv', 'remove'],
                          help="The action that will be taken on the provided classname(s)")
     parser.add_argument ("classname", nargs="+", help="The name of the class(es) to apply the command onto, in the current project directory.")
-    parser.add_argument ("--headers", action="store_true", help="Create header files only.")
+    parser.add_argument ("--headers", action="store_true", help="Create header files only. Has the precedence over other filters.")
+    parser.add_argument ("--implementations", action="store_true", help="Create implementation files only.")
 
     args = parser.parse_args()
 
@@ -131,6 +132,8 @@ if __name__ == '__main__':
     else :
         if args.headers :
             filter = ["headers"]
+        elif args.implementations :
+            filter = ["implementations"]
         else :
             filter = ["headers", "implementations"]
 
