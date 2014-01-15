@@ -69,8 +69,8 @@ class FileList:
         self.metaref = CMakeFile.metadata[self.category]
         self.file_list = string_list.split()
 
-    def sort_filelist(self):
-        self.file_list = sorted(self.file_list)
+    def sort_unicity_filelist(self):
+        self.file_list = sorted(list(set(self.file_list)))
 
     def complete_filename(self, basename):
         return basename + self.metaref["ext"]
@@ -81,8 +81,7 @@ class FileList:
     def insert_names(self, name_list):
         new_names = self.generate_filelist(name_list)
         self.file_list.extend(new_names)
-        self.file_list = sorted(self.file_list)
-        self.sort_filelist()
+        self.sort_unicity_filelist()
         return new_names
 
     def remove_names(self, name_list) :
