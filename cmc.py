@@ -37,22 +37,21 @@ class CMakeFile:
 
             self.outro = text_file[previous_match_end:]
 
-    def insert_names(self, name_list, category_filter_list):
-        new_files = \
-            [file_list.insert_names(name_list)
-            for file_list in [group[2] for group in self.groups]
-            if file_list.category in category_filter_list]
+    def __filter_category(self, category_filter_list):
+        return [file_list for file_list in [group[2] for group in self.groups]
+                          if file_list.category in category_filter_list]
 
+
+    def insert_names(self, name_list, category_filter_list):
+        new_files = map(lambda x: x.insert_names(name_list), self.__filter_category(category_filter_list))
         [open(filename, "a") for filename_list in new_files for filename in filename_list]
 
-    def remove_names(self, name_list):
-        removed_files = \
-            [group[2].remove_names(name_list) for group in self.groups]
-        
+    def remove_names(self, name_list, category_filter_list):
+        removed_files = map(lambda x: x.remove_names(name_list), self.__filter_category(category_filter_list))
         [os.remove(filename) for filename_list in removed_files for filename in filename_list]
 
-    def move_name(self, source_name, dest_name):
-        moved_files = [group[2].move_name(source_name, dest_name) for group in self.groups]
+    def move_name(self, source_name, dest_name, category_filter_list):
+        moved_files = map(lambda x: x.move_name(source_name, dest_name), self.__filter_category(category_filter_list))
         [os.rename(file_pair[0], file_pair[1]) for file_pair in moved_files if file_pair]
 
     def save_file(self):
@@ -97,7 +96,7 @@ class FileList:
         if self.file_list.count(source_file):
             self.file_list.remove(source_file)
             self.file_list.append(dest_file)
-            self.sort_filelist()
+            self.sort_unicity_filelist()
             return (source_file, dest_file)
         else:
             return None
@@ -120,22 +119,23 @@ if __name__ == '__main__':
 
     cm_file = CMakeFile("CMakeLists.txt")
 
+    if args.headers :
+        filter = ["headers"]
+    elif args.implementations :
+        filter = ["implementations"]
+    else :
+        filter = ["headers", "implementations"]
+
+
     if args.command == 'mv' :
         if len(args.classname) != 2:
             sys.exit(1)
-        cm_file.move_name(*args.classname)
+        cm_file.move_name(*args.classname, category_filter_list=filter)
 
     elif args.command == 'remove' :
-        cm_file.remove_names(args.classname)
+        cm_file.remove_names(args.classname, filter)
 
     else :
-        if args.headers :
-            filter = ["headers"]
-        elif args.implementations :
-            filter = ["implementations"]
-        else :
-            filter = ["headers", "implementations"]
-
         cm_file.insert_names(args.classname, filter)
 
     cm_file.save_file()
