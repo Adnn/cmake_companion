@@ -114,6 +114,10 @@ if __name__ == '__main__':
     parser.add_argument ("classname", nargs="+", help="The name of the class(es) to apply the command onto, in the current project directory.")
     parser.add_argument ("--headers", action="store_true", help="Create header files only. Has the precedence over other filters.")
     parser.add_argument ("--implementations", action="store_true", help="Create implementation files only.")
+    parser.add_argument ("--headers_ext", "--he", help="Replace the default header files extension ["
+                                                                + CMakeFile.metadata["headers"]["ext"] + "].")
+    parser.add_argument ("--implementations_ext", "--ie", help="Replace the default implementation files extension ["
+                                                                + CMakeFile.metadata["implementations"]["ext"] + "].")
 
     args = parser.parse_args()
 
@@ -126,6 +130,12 @@ if __name__ == '__main__':
     else :
         filter = ["headers", "implementations"]
 
+    if args.headers_ext:
+        ext = args.headers_ext
+        CMakeFile.metadata["headers"]["ext"] = ext if ext.startswith(".") else "."+ext
+    if args.implementations_ext:
+        ext = args.implementations_ext
+        CMakeFile.metadata["implementations"]["ext"] = ext if ext.startswith(".") else "."+ext
 
     if args.command == 'mv' :
         if len(args.classname) != 2:
@@ -133,6 +143,7 @@ if __name__ == '__main__':
         cm_file.move_name(*args.classname, category_filter_list=filter)
 
     elif args.command == 'remove' :
+        # \todo Would be better if the program was inferring the implementation files extension for removal.
         cm_file.remove_names(args.classname, filter)
 
     else :
